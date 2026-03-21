@@ -30,6 +30,7 @@ protocols/*.h*
 *.so
 src/render/shaders/*.inc
 src/render/shaders/Shaders.hpp
+src/config/generated_config.h
 
 hyprctl/hyprctl
 hyprctl/hw-protocols/*.c*

@@ -26,6 +26,9 @@ message(STATUS "Gathering git info")
 execute_process(COMMAND ./scripts/generateShaderIncludes.sh
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                 RESULT_VARIABLE HYPR_SHADER_GEN_RESULT)
+# Generate default config header file
+execute_process(COMMAND ./scripts/generateConfigHeader.sh
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 if(NOT HYPR_SHADER_GEN_RESULT EQUAL 0)
   message(
     FATAL_ERROR
