@@ -304,8 +304,13 @@ void CKeybindManager::updateXKBTranslationState() {
     const auto        PCONTEXT   = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     FILE* const       KEYMAPFILE = FILEPATH.empty() ? nullptr : fopen(absolutePath(FILEPATH, g_pConfigManager->m_configCurrentPath).c_str(), "r");
 
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
     auto              PKEYMAP = KEYMAPFILE ? xkb_keymap_new_from_file(PCONTEXT, KEYMAPFILE, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS) :
                                              xkb_keymap_new_from_names2(PCONTEXT, &rules, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#else
+    auto              PKEYMAP = KEYMAPFILE ? xkb_keymap_new_from_file(PCONTEXT, KEYMAPFILE, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS) :
+                                             xkb_keymap_new_from_names(PCONTEXT, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#endif
     if (KEYMAPFILE)
         fclose(KEYMAPFILE);
 
@@ -318,7 +323,11 @@ void CKeybindManager::updateXKBTranslationState() {
                          rules.variant, rules.rules, rules.model, rules.options);
         memset(&rules, 0, sizeof(rules));
 
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
         PKEYMAP = xkb_keymap_new_from_names2(PCONTEXT, &rules, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#else
+        PKEYMAP = xkb_keymap_new_from_names(PCONTEXT, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#endif
     }
 
     xkb_context_unref(PCONTEXT);

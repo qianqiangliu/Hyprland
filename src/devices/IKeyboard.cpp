@@ -87,13 +87,21 @@ void IKeyboard::setKeymap(const SStringRuleNames& rules) {
         if (FILE* const KEYMAPFILE = fopen(path.c_str(), "r"); !KEYMAPFILE)
             Log::logger->log(Log::ERR, "Cannot open input:kb_file= file for reading");
         else {
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
             m_xkbKeymap = xkb_keymap_new_from_file(CONTEXT, KEYMAPFILE, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#else
+            m_xkbKeymap = xkb_keymap_new_from_file(CONTEXT, KEYMAPFILE, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#endif
             fclose(KEYMAPFILE);
         }
     }
 
     if (!m_xkbKeymap)
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
         m_xkbKeymap = xkb_keymap_new_from_names2(CONTEXT, &XKBRULES, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#else
+        m_xkbKeymap = xkb_keymap_new_from_names(CONTEXT, &XKBRULES, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#endif
 
     if (!m_xkbKeymap) {
         g_pConfigManager->addParseError("Invalid keyboard layout passed. ( rules: " + rules.rules + ", model: " + rules.model + ", variant: " + rules.variant +
@@ -109,7 +117,11 @@ void IKeyboard::setKeymap(const SStringRuleNames& rules) {
         m_currentRules.options = "";
         m_currentRules.layout  = "us";
 
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
         m_xkbKeymap = xkb_keymap_new_from_names2(CONTEXT, &XKBRULES, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#else
+        m_xkbKeymap = xkb_keymap_new_from_names(CONTEXT, &XKBRULES, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#endif
     }
 
     updateXKBTranslationState(m_xkbKeymap);
@@ -153,7 +165,11 @@ void IKeyboard::updateKeymapFD() {
     if (m_xkbKeymapV1FD.isValid())
         m_xkbKeymapV1FD.reset();
 
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
     auto cKeymapStr   = xkb_keymap_get_as_string(m_xkbKeymap, XKB_KEYMAP_FORMAT_TEXT_V2);
+#else
+    auto cKeymapStr   = xkb_keymap_get_as_string(m_xkbKeymap, XKB_KEYMAP_FORMAT_TEXT_V1);
+#endif
     m_xkbKeymapString = cKeymapStr;
     free(cKeymapStr); // NOLINT(cppcoreguidelines-no-malloc,-warnings-as-errors)
     auto cKeymapV1Str   = xkb_keymap_get_as_string(m_xkbKeymap, XKB_KEYMAP_FORMAT_TEXT_V1);
@@ -238,19 +254,31 @@ void IKeyboard::updateXKBTranslationState(xkb_keymap* const keymap) {
             rules.model   = model.c_str();
             rules.variant = variant.c_str();
 
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
             auto KEYMAP = xkb_keymap_new_from_names2(PCONTEXT, &rules, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#else
+            auto KEYMAP = xkb_keymap_new_from_names(PCONTEXT, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#endif
 
             if (!KEYMAP) {
                 Log::logger->log(Log::ERR, "updateXKBTranslationState: keymap failed 1, fallback without model/variant");
                 rules.model   = "";
                 rules.variant = "";
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
                 KEYMAP        = xkb_keymap_new_from_names2(PCONTEXT, &rules, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#else
+                KEYMAP        = xkb_keymap_new_from_names(PCONTEXT, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#endif
             }
 
             if (!KEYMAP) {
                 Log::logger->log(Log::ERR, "updateXKBTranslationState: keymap failed 2, fallback to us");
                 rules.layout = "us";
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
                 KEYMAP       = xkb_keymap_new_from_names2(PCONTEXT, &rules, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#else
+                KEYMAP       = xkb_keymap_new_from_names(PCONTEXT, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#endif
             }
 
             m_xkbState       = xkb_state_new(KEYMAP);
@@ -274,7 +302,11 @@ void IKeyboard::updateXKBTranslationState(xkb_keymap* const keymap) {
         .options = m_currentRules.options.c_str(),
     };
 
+#ifdef XKB_KEYMAP_FORMAT_TEXT_V2
     const auto NEWKEYMAP = xkb_keymap_new_from_names2(PCONTEXT, &rules, XKB_KEYMAP_FORMAT_TEXT_V2, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#else
+    const auto NEWKEYMAP = xkb_keymap_new_from_names(PCONTEXT, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+#endif
 
     m_xkbState       = xkb_state_new(NEWKEYMAP);
     m_xkbStaticState = xkb_state_new(NEWKEYMAP);
