@@ -693,7 +693,7 @@ bool CMonitor::applyMonitorRule(SMonitorRule* pMonitorRule, bool force) {
         std::ranges::sort(sortedModes, sortFunc);
         if (sortedModes.size() > 3)
             sortedModes.erase(sortedModes.begin() + 3, sortedModes.end());
-        requestedModes.insert_range(requestedModes.end(), sortedModes | std::views::reverse);
+        std::ranges::copy(sortedModes | std::views::reverse, std::back_inserter(requestedModes));
     };
 
     // last fallback is always preferred mode
